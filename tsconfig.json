@@ -8,6 +8,12 @@
     "jsx": "react-jsx",
     "allowJs": true,
 
+    // Path mapping
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["frontend/*"]
+    },
+
     // Bundler mode
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,

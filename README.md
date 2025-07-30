@@ -1,7 +1,7 @@
 # Bun DB to frontend type-safety
 
 Example project combining bun's full-stack dev server with tRPC and drizzle, deriving frontend types from the DB schema.
-Includes an example start of an auth solution.
+Includes an example start of an auth solution and a Vue frontend integrated as a bun plugin (works for bundler and dev server).
 
 To install dependencies:
 

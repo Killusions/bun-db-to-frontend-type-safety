@@ -1,7 +1,6 @@
 import { serve } from 'bun';
 
 import Frontend from './frontend/index.html';
-import Login from './frontend/login.html';
 import Backend from './backend/router';
 import { seedAccountAndPosts } from './backend/dev/seed';
 import { migrate } from './backend/dev/migrate';
@@ -23,7 +22,6 @@ serve({
   port: PORT,
   routes: {
     '/': Frontend,
-    '/login': Login,
   },
   hostname: BACKEND_HOST
 });
