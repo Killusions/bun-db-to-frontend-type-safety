@@ -2,6 +2,12 @@
 import { reactive, ref, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { authClient } from '../client/auth';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Skeleton } from '@/components/ui/skeleton';
 
 const router = useRouter();
 const localError = ref('');
@@ -88,330 +94,128 @@ const handleRequestNewToken = () => {
 </script>
 
 <template>
-  <div class="reset-password-container">
-    <div class="reset-password-form">
-      <!-- Loading state while checking token -->
-      <div v-if="isCheckingToken" class="checking-token">
-        <div class="spinner"></div>
-        <p>Validating reset token...</p>
-      </div>
-
-      <!-- Invalid token state -->
-      <div v-else-if="!isValidToken" class="error-state">
-        <div class="icon">⚠️</div>
-        <h3>Invalid Reset Link</h3>
-        <p>This password reset link is invalid or has expired.</p>
-
-        <button
-          type="button"
-          class="submit-button"
-          @click="handleRequestNewToken"
-        >
-          Request New Reset Link
-        </button>
-
-        <button
-          type="button"
-          class="secondary-button"
-          @click="handleBackToLogin"
-        >
-          Back to Login
-        </button>
-      </div>
-
-      <!-- Success state -->
-      <div v-else-if="successMessage" class="success-state">
-        <div class="icon">✅</div>
-        <h3>Password Reset Successfully</h3>
-        <div class="success-message">
-          {{ successMessage }}
-        </div>
-
-        <button
-          type="button"
-          class="submit-button"
-          @click="handleBackToLogin"
-        >
-          Go to Login
-        </button>
-      </div>
-
-      <!-- Reset password form -->
-      <div v-else class="form-content">
-        <div class="form-header">
-          <h2>Reset Password</h2>
-          <p>Enter your new password below.</p>
-        </div>
-
-        <form @submit.prevent="handleSubmit">
-          <div class="form-group">
-            <label for="password">New Password</label>
-            <input
-              id="password"
-              type="password"
-              v-model="form.password"
-              placeholder="Enter new password"
-              required
-              :disabled="isLoading"
-            />
-            <div class="password-strength">
-              Password must be at least 8 characters long
+  <div class="flex-1 flex-grow overflow-auto flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+      <Card>
+        <!-- Loading state while checking token -->
+        <template v-if="isCheckingToken">
+          <CardHeader class="space-y-1 text-center">
+            <CardTitle class="text-2xl font-bold">Reset Password</CardTitle>
+            <CardDescription>Validating reset token...</CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <div class="flex justify-center">
+              <Skeleton class="h-8 w-full" />
             </div>
-          </div>
+          </CardContent>
+        </template>
 
-          <div class="form-group">
-            <label for="confirmPassword">Confirm New Password</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              v-model="form.confirmPassword"
-              placeholder="Confirm new password"
-              required
-              :disabled="isLoading"
-            />
-          </div>
+        <!-- Invalid token state -->
+        <template v-else-if="!isValidToken">
+          <CardHeader class="space-y-1 text-center">
+            <div class="text-5xl mb-4">⚠️</div>
+            <CardTitle class="text-2xl font-bold">Invalid Reset Link</CardTitle>
+            <CardDescription>
+              This password reset link is invalid or has expired.
+            </CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <Button class="w-full" @click="handleRequestNewToken">
+              Request New Reset Link
+            </Button>
+            <Button variant="outline" class="w-full" @click="handleBackToLogin">
+              Back to Login
+            </Button>
+          </CardContent>
+        </template>
 
-          <button
-            type="submit"
-            class="submit-button"
-            :disabled="isLoading"
-          >
-            <span v-if="isLoading" class="loading-spinner"></span>
-            {{ isLoading ? 'Resetting...' : 'Reset Password' }}
-          </button>
+        <!-- Success state -->
+        <template v-else-if="successMessage">
+          <CardHeader class="space-y-1 text-center">
+            <div class="text-5xl mb-4">✅</div>
+            <CardTitle class="text-2xl font-bold">Password Reset Successfully</CardTitle>
+            <CardDescription>
+              Your password has been updated successfully.
+            </CardDescription>
+          </CardHeader>
+          <CardContent class="space-y-4">
+            <Alert>
+              <AlertDescription>{{ successMessage }}</AlertDescription>
+            </Alert>
+            <Button class="w-full" @click="handleBackToLogin">
+              Go to Login
+            </Button>
+          </CardContent>
+        </template>
 
-          <button
-            type="button"
-            class="secondary-button"
-            @click="handleBackToLogin"
-            :disabled="isLoading"
-          >
-            Back to Login
-          </button>
+        <!-- Reset password form -->
+        <template v-else>
+          <CardHeader class="space-y-1 text-center">
+            <CardTitle class="text-2xl font-bold">Reset Password</CardTitle>
+            <CardDescription>
+              Enter your new password below.
+            </CardDescription>
+          </CardHeader>
 
-          <div v-if="localError" class="error-message">
-            {{ localError }}
-          </div>
-        </form>
-      </div>
+          <form @submit.prevent="handleSubmit">
+            <CardContent class="space-y-4">
+              <!-- Error Alert -->
+              <Alert v-if="localError" variant="destructive">
+                <AlertDescription>{{ localError }}</AlertDescription>
+              </Alert>
+
+              <!-- New Password Field -->
+              <div class="space-y-2">
+                <Label for="password">New Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter new password"
+                  v-model="form.password"
+                  :disabled="isLoading"
+                  required
+                />
+                <p class="text-sm text-muted-foreground">
+                  Password must be at least 8 characters long
+                </p>
+              </div>
+
+              <!-- Confirm Password Field -->
+              <div class="space-y-2">
+                <Label for="confirmPassword">Confirm New Password</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm new password"
+                  v-model="form.confirmPassword"
+                  :disabled="isLoading"
+                  required
+                />
+              </div>
+
+              <!-- Reset Button -->
+              <Button
+                type="submit"
+                class="w-full"
+                :disabled="isLoading"
+              >
+                {{ isLoading ? 'Resetting...' : 'Reset Password' }}
+              </Button>
+
+              <!-- Back to Login Button -->
+              <Button
+                type="button"
+                variant="outline"
+                class="w-full"
+                @click="handleBackToLogin"
+                :disabled="isLoading"
+              >
+                Back to Login
+              </Button>
+            </CardContent>
+          </form>
+        </template>
+      </Card>
     </div>
   </div>
 </template>
-
-<style scoped>
-.reset-password-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  min-height: 100vh;
-  background-color: #f5f5f5;
-  padding: 20px;
-}
-
-.reset-password-form {
-  display: flex;
-  flex-direction: column;
-  width: 100%;
-  max-width: 400px;
-  padding: 30px;
-  background-color: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-}
-
-.form-header {
-  text-align: center;
-  margin-bottom: 30px;
-}
-
-.form-header h2 {
-  margin: 0 0 10px 0;
-  color: #333;
-  font-size: 24px;
-}
-
-.form-header p {
-  margin: 0;
-  color: #666;
-  font-size: 14px;
-  line-height: 1.5;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 8px;
-  color: #333;
-  font-weight: 500;
-  font-size: 14px;
-}
-
-input {
-  width: 100%;
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 16px;
-  box-sizing: border-box;
-  transition: border-color 0.2s ease;
-}
-
-input:focus {
-  outline: none;
-  border-color: #333;
-  box-shadow: 0 0 0 2px rgba(51, 51, 51, 0.1);
-}
-
-input:disabled {
-  background-color: #f9f9f9;
-  cursor: not-allowed;
-}
-
-.password-strength {
-  margin-top: 8px;
-  font-size: 12px;
-  color: #666;
-}
-
-.submit-button {
-  width: 100%;
-  padding: 12px;
-  background-color: #333;
-  color: white;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-  font-weight: 500;
-  transition: background-color 0.2s ease;
-  margin-bottom: 15px;
-}
-
-.submit-button:hover:not(:disabled) {
-  background-color: #555;
-}
-
-.submit-button:disabled {
-  background-color: #999;
-  cursor: not-allowed;
-}
-
-.secondary-button {
-  width: 100%;
-  padding: 12px;
-  background-color: transparent;
-  color: #333;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 16px;
-  transition: all 0.2s ease;
-  margin-bottom: 10px;
-}
-
-.secondary-button:hover {
-  background-color: #f9f9f9;
-  border-color: #333;
-}
-
-.success-message {
-  background-color: #f0f9ff;
-  border: 1px solid #0ea5e9;
-  color: #0369a1;
-  padding: 15px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  font-size: 14px;
-  line-height: 1.5;
-  text-align: center;
-}
-
-.error-message {
-  background-color: #fef2f2;
-  border: 1px solid #f87171;
-  color: #dc2626;
-  padding: 15px;
-  border-radius: 6px;
-  margin-bottom: 20px;
-  font-size: 14px;
-}
-
-.error-state {
-  text-align: center;
-}
-
-.error-state .icon {
-  font-size: 48px;
-  color: #ef4444;
-  margin-bottom: 20px;
-}
-
-.error-state h3 {
-  margin: 0 0 10px 0;
-  color: #333;
-  font-size: 20px;
-}
-
-.error-state p {
-  margin: 0 0 30px 0;
-  color: #666;
-  line-height: 1.5;
-}
-
-.success-state {
-  text-align: center;
-}
-
-.success-state .icon {
-  font-size: 48px;
-  color: #10b981;
-  margin-bottom: 20px;
-}
-
-.success-state h3 {
-  margin: 0 0 10px 0;
-  color: #333;
-  font-size: 20px;
-}
-
-.success-state p {
-  margin: 0 0 30px 0;
-  color: #666;
-  line-height: 1.5;
-}
-
-.loading-spinner {
-  display: inline-block;
-  width: 16px;
-  height: 16px;
-  border: 2px solid #ffffff;
-  border-radius: 50%;
-  border-top-color: transparent;
-  animation: spin 1s ease-in-out infinite;
-  margin-right: 8px;
-}
-
-.checking-token {
-  text-align: center;
-  padding: 40px 0;
-}
-
-.checking-token .spinner {
-  display: inline-block;
-  width: 32px;
-  height: 32px;
-  border: 3px solid #ddd;
-  border-radius: 50%;
-  border-top-color: #333;
-  animation: spin 1s ease-in-out infinite;
-  margin-bottom: 20px;
-}
-
-@keyframes spin {
-  to { transform: rotate(360deg); }
-}
-</style>
