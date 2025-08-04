@@ -1,71 +1,87 @@
 <script lang="ts" setup>
 import { reactive, ref, computed, onMounted } from 'vue';
-import { useRouter, useRoute } from 'vue-router';
-import { useSession, signIn } from '../client/auth';
+import { useRouter } from 'vue-router';
+import { useSession, signUp } from '../client/auth';
 import SocialLogin from '../components/SocialLogin.vue';
 
 const router = useRouter();
-const route = useRoute();
 const error = ref('');
 const isLoading = ref(false);
-const showRegisterLink = ref(true);
-const showVerificationMessage = ref(false);
-
-const redirectTo = route.query.redirect?.toString() ?? '/';
+const successMessage = ref('');
 const session = useSession();
 
 // Computed values
 const currentUser = computed(() => session.value?.data?.user);
 
 const form = reactive({
+  name: '',
   email: '',
-  password: ''
+  password: '',
+  confirmPassword: ''
 });
 
 onMounted(() => {
-  // Get token from raw URL param, not router (because of how better-auth's backend works)
-  showVerificationMessage.value = !!(route.query.unverified);
 });
 
 const handleSubmit = async () => {
-  if (!form.email || !form.password) {
+  // Reset error and success message
+  error.value = '';
+  successMessage.value = '';
+
+  // Validate form
+  if (!form.name || !form.email || !form.password) {
     error.value = 'Please fill in all fields';
     return;
   }
 
-  error.value = '';
+  if (form.password !== form.confirmPassword) {
+    error.value = 'Passwords do not match';
+    return;
+  }
+
+  if (form.password.length < 8) {
+    error.value = 'Password must be at least 8 characters long';
+    return;
+  }
+
   isLoading.value = true;
 
   try {
-    const { error: authError } = await signIn.email({
+    const { error: authError } = await signUp.email({
       email: form.email,
       password: form.password,
+      name: form.name,
+      callbackURL: `${window.location.protocol}//${window.location.host}${window.location.pathname}#${router.getRoutes().find(route => route.path.includes('login'))!.path.split(':').at(0)}`
     });
 
     if (authError) {
-      error.value = authError.message || 'Login failed. Please try again.';
+      error.value = authError.message || 'Registration failed. Please try again.';
     } else {
-      router.push(redirectTo);
+      // Registration successful, redirect to home
+      router.push('/login?unverified=true');
     }
   } catch (err) {
-    error.value = 'Login failed. Please try again.';
+    console.log(err);
+    error.value = 'Registration failed. Please try again.';
   } finally {
     isLoading.value = false;
   }
 };
-
-const handleForgotPassword = () => {
-  router.push('/forgot-password');
-};
 </script>
 
 <template>
-  <div class="login-container">
-    <form class="login-form" @submit.prevent="handleSubmit">
-      <h2>Login</h2>
+  <div class="register-container">
+    <form class="register-form" @submit.prevent="handleSubmit">
+      <h2>Register</h2>
 
-      <div v-if="showVerificationMessage" class="verification-message">
-        Your email is not verified. Please check your inbox for the verification email before logging in.
+      <div class="form-group">
+        <input
+          type="text"
+          v-model="form.name"
+          placeholder="Name"
+          required
+          :disabled="isLoading"
+        />
       </div>
 
       <div class="form-group">
@@ -88,35 +104,45 @@ const handleForgotPassword = () => {
         />
       </div>
 
+      <div class="form-group">
+        <input
+          type="password"
+          v-model="form.confirmPassword"
+          placeholder="Confirm Password"
+          required
+          :disabled="isLoading"
+        />
+      </div>
+
       <button type="submit" :disabled="isLoading">
-        {{ isLoading ? 'Logging in...' : 'Login' }}
+        {{ isLoading ? 'Registering...' : 'Register' }}
       </button>
 
       <div v-if="error" class="error-message">
         {{ error }}
       </div>
 
-      <div class="forgot-password-link">
-        <a @click="handleForgotPassword">Forgot your password?</a>
+      <div v-if="successMessage" class="success-message">
+        {{ successMessage }}
       </div>
 
       <!-- Social Login -->
       <SocialLogin
-        :redirectTo="redirectTo"
+        redirectTo="/"
         :showDivider="true"
         buttonStyle="full"
         size="medium"
       />
 
-      <div v-if="showRegisterLink" class="register-link">
-        Don't have an account? <a @click.prevent="router.push('/register')" href="/register">Register</a>
+      <div class="login-link">
+        Already have an account? <a @click.prevent="router.push('/login')" href="/login">Login</a>
       </div>
     </form>
   </div>
 </template>
 
 <style scoped>
-.login-container {
+.register-container {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -125,7 +151,7 @@ const handleForgotPassword = () => {
   background-color: #f5f5f5;
 }
 
-.login-form {
+.register-form {
   display: flex;
   flex-direction: column;
   width: 300px;
@@ -137,16 +163,6 @@ const handleForgotPassword = () => {
 
 .form-group {
   margin-bottom: 15px;
-}
-
-.verification-message {
-  background-color: #e3f2fd;
-  border: 1px solid #2196f3;
-  border-radius: 4px;
-  padding: 10px;
-  margin-bottom: 15px;
-  font-size: 14px;
-  color: #1976d2;
 }
 
 input {
@@ -183,26 +199,24 @@ button:disabled {
   margin-top: 10px;
 }
 
-.register-link,
-.forgot-password-link {
+.success-message {
+  color: #2ecc71;
+  font-size: 14px;
+  margin-top: 10px;
+}
+
+.login-link {
   margin-top: 15px;
   font-size: 14px;
   text-align: center;
 }
 
-.register-link a,
-.forgot-password-link a {
+.login-link a {
   color: #333;
   text-decoration: underline;
-  cursor: pointer;
 }
 
-.register-link a:hover,
-.forgot-password-link a:hover {
+.login-link a:hover {
   color: #555;
-}
-
-.forgot-password-link {
-  margin-top: 10px;
 }
 </style>

@@ -16,10 +16,10 @@ const getPosts = async (conditions: (SQL | undefined)[] = []) => {
 };
 
 export const postsRouter = router({
-  getPublicPosts: publicProcedure.input(z.void()).output(createSelectSchema(tables.posts).array()).query(async () => {
+  getPublicPosts: publicProcedure.input(z.void().optional()).output(createSelectSchema(tables.posts).array()).query(async () => {
     return await getPosts([eq(tables.posts.isPrivate, false)]);
   }),
-  getPosts: protectedProcedure.input(z.void()).output(createSelectSchema(tables.posts).array()).query(async({ ctx: { session } }) => {
+  getPosts: protectedProcedure.input(z.void().optional()).output(createSelectSchema(tables.posts).array()).query(async({ ctx: { session } }) => {
     return await getPosts([
       or(eq(tables.posts.isPrivate, false), eq(tables.posts.ownerId, session.userId))
     ]);

@@ -1,11 +1,11 @@
 import { relations } from 'drizzle-orm'
 import { pgTable, uuid, varchar, text, timestamp, boolean, index } from 'drizzle-orm/pg-core';
-import { users } from './auth-schema.ts';
-export * from './auth-schema.ts';
+import { user } from './auth-schema';
+export * from './auth-schema';
 
 export const posts = pgTable('posts', {
   id: uuid('id').defaultRandom().primaryKey(),
-  ownerId: uuid('owner_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  ownerId: varchar('owner_id', { length: 255 }).notNull().references(() => user.id, { onDelete: 'cascade' }),
   title: varchar('title', { length: 255 }).notNull(),
   body: text('body').notNull(),
   isPrivate: boolean('is_private').default(false).notNull(),
@@ -15,10 +15,10 @@ export const posts = pgTable('posts', {
   index('posts_is_private_idx').on(t.isPrivate),
 ]);
 
-// posts → users (owner)
+// posts → user (owner)
 export const postsRelations = relations(posts, ({ one, many }) => ({
-  owner: one(users, {
+  owner: one(user, {
     fields: [posts.ownerId],
-    references: [users.id]
+    references: [user.id]
   })
 }));
