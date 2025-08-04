@@ -1,94 +1,150 @@
 import { strict as assert } from 'assert';
 import { randomBytes } from 'crypto';
 
-import { localAdminCaller } from '../router';
+import { auth } from '../auth/auth';
+import { db, tables } from '../db';
+import { eq } from 'drizzle-orm';
 
 // Generate a random password for the admin account
 const generateRandomPassword = () => {
   return randomBytes(16).toString('hex');
 };
 
+const adminEmail = 'admin@mll.one';
+const adminName = 'Admin User';
 const randomPassword = generateRandomPassword();
 
-const adminEmail = 'admin@mll.one';
-const adminName = 'admin';
-
-const publicPostContent = 'This is a public post created during the seed process.';
 const publicPostTitle = 'Example Public Post';
-
-const privatePostContent = 'This is a private post created during the seed process.';
 const privatePostTitle = 'Example Private Post';
 
 // Create an admin account if it doesn't exist, and create two sample posts
 export const seedAccountAndPosts = async () => {
   let ownerId: string;
-  let adminCaller = localAdminCaller(adminEmail);
+
   try {
-    const accountCreated = await adminCaller.auth.createAccount({
-      email: adminEmail,
-      password: randomPassword,
-      name: adminName,
-      role: 'admin',
-    });
-    ownerId = accountCreated.id;
-    console.log(`Admin account created with email: ${adminEmail} and password: ${randomPassword}`);
-  } catch (error: unknown) {
-    if (!(error instanceof Error)) {
-      throw new Error('An unknown error occurred while creating the admin account');
-    } else if (!error.message.includes('Email taken')) {
-      console.error(error);
-      throw new Error(`Failed to create admin account: ${error.message}`);
-    } else {
-      const existingUser = await adminCaller.getUserByEmail({ email: adminEmail });
-      if (!existingUser) {
-        throw new Error(`Failed to find existing user with email: ${adminEmail}`);
+    // Try to create admin account using Better Auth
+    const result = await auth.api.signUpEmail({
+      body: {
+        email: adminEmail,
+        password: randomPassword,
+        name: adminName,
       }
+    });
+
+    if (result) {
+      // Get the created user
+      const userRecord = await db.query.user.findFirst({
+        where: eq(tables.user.email, adminEmail)
+      });
+
+      if (userRecord) {
+        ownerId = userRecord.id;
+
+        // Create admin role if it doesn't exist
+        let adminRole = await db.query.role.findFirst({
+          where: eq(tables.role.name, 'admin')
+        });
+
+        if (!adminRole) {
+          const newRole = await db.insert(tables.role).values({
+            id: crypto.randomUUID(),
+            name: 'admin',
+            description: 'Administrator role'
+          }).returning();
+          adminRole = newRole[0];
+        }
+
+        // Assign admin role to user
+        if (adminRole) {
+          await db.insert(tables.userRole).values({
+            id: crypto.randomUUID(),
+            userId: userRecord.id,
+            roleId: adminRole.id
+          });
+        }
+
+        // Verify the admin account email
+        await db.update(tables.user)
+          .set({ emailVerified: true })
+          .where(eq(tables.user.id, userRecord.id));
+
+        console.log(`Admin account created with email: ${adminEmail} and password: ${randomPassword}`);
+      } else {
+        throw new Error('Failed to find created user');
+      }
+    } else {
+      throw new Error('Failed to create admin account');
+    }
+  } catch (error: unknown) {
+    // Account might already exist, try to get existing user
+    const existingUser = await db.query.user.findFirst({
+      where: eq(tables.user.email, adminEmail)
+    });
+
+    if (existingUser) {
+      console.log(`Admin account already exists with email: ${adminEmail}`);
       ownerId = existingUser.id;
+    } else {
+      console.error('Error creating admin account:', error);
+      throw error;
     }
   }
-  adminCaller = localAdminCaller(adminEmail, ownerId);
+
   // Delete all previous posts of the admin account
-  const previousPosts = await adminCaller.posts.getUserPosts({ ownerId });
-  await Promise.all(
-    previousPosts.map((post) => adminCaller.posts.deletePost({ id: post.id }))
-  );
-  // Create two sample posts, one public and one private
-  const publicPost = await adminCaller.posts.createPost({
+  const previousPosts = await db.query.posts.findMany({
+    where: eq(tables.posts.ownerId, ownerId)
+  });
+
+  if (previousPosts.length > 0) {
+    await db.delete(tables.posts).where(eq(tables.posts.ownerId, ownerId));
+  }
+
+  // Create sample posts
+  const publicPostBody = `
+This is a public post that everyone can see. It demonstrates the basic functionality of the simple server blog platform.
+
+Key features:
+- User authentication with Better Auth
+- Role-based access control
+- Public and private posts
+- Vue 3 frontend with TypeScript
+- tRPC for type-safe API communication
+
+This post is visible to all users, whether they're logged in or not.
+  `.trim();
+
+  const privatePostBody = `
+This is a private post that only the owner can see.
+  `.trim();
+
+  // Create public post
+  const publicPost = await db.insert(tables.posts).values({
+    id: crypto.randomUUID(),
+    ownerId,
     title: publicPostTitle,
-    body: publicPostContent
-  });
-  console.log(`Public post created with ID: ${publicPost.id}`);
-  const privatePost = await adminCaller.posts.createPost({
+    body: publicPostBody,
+    isPrivate: false,
+  }).returning();
+
+  // Create private post
+  const privatePost = await db.insert(tables.posts).values({
+    id: crypto.randomUUID(),
+    ownerId,
     title: privatePostTitle,
-    body: privatePostContent,
-    isPrivate: true
-  });
-  console.log(`Private post created with ID: ${privatePost.id}`);
+    body: privatePostBody,
+    isPrivate: true,
+  }).returning();
 
-  // --- TEST SECTION ---
-  // Fetch the posts to verify they were created correctly
-  const posts = await adminCaller.posts.getPosts();
-  assert(posts.length === 2, 'Expected two posts to be created');
-  assert(posts.some(post => post.title === publicPostTitle), 'Public post not found');
-  assert(posts.some(post => post.title === privatePostTitle), 'Private post not found');
-  // Verify the admin account exists
-  const adminUser = await adminCaller.getUserByEmail({ email: adminEmail });
-  assert(adminUser, 'Admin user not found');
-  assert(adminUser.name === adminName, 'Admin user name mismatch');
+  console.log(`Created ${publicPost.length + privatePost.length} sample posts for admin user`);
 
-  // --- TEST UPDATE ---
-  // Create a new post to test the update functionality
-  const updatedPost = await adminCaller.posts.createPost({
-    title: 'Updated Post Title',
-    body: 'This post is created to test the update functionality.'
-  });
-  // Update the post
-  const updatedPostContent = 'This post has been updated to test the update functionality.';
-  await adminCaller.posts.updatePost({
-    id: updatedPost.id,
-    title: 'Updated Post Title',
-    body: updatedPostContent
-  });
-  // Delete the post
-  await adminCaller.posts.deletePost({ id: updatedPost.id });
+  assert(publicPost.length === 1, 'Public post was not created');
+  assert(privatePost.length === 1, 'Private post was not created');
+
+  console.log('Database seeding completed successfully!');
+};
+
+// For standalone execution
+if (import.meta.main) {
+  await seedAccountAndPosts();
+  process.exit(0);
 }

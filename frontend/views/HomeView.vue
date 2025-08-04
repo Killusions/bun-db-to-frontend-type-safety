@@ -1,52 +1,134 @@
 <script lang="ts" setup>
-import { ref, onMounted } from 'vue';
+import { ref, computed, onMounted, watch } from 'vue';
 import { RouterLink } from 'vue-router';
 
 import { client, type Query } from '../client/client';
-import { loggedIn } from '../client/auth';
+import { useSession, sessionPending } from '../client/auth';
 
 const posts = ref<Query["posts"]["getPosts"]>([]);
 const isLoading = ref(true);
 const users = ref(new Map<string, Query["getUserInfo"]>());
+const session = useSession();
+
+// Computed values
+const currentUser = computed(() => session.value?.data?.user);
 
 onMounted(async () => {
-  try {
-    posts.value = loggedIn.value
-      ? await client.posts.getPosts.query(undefined)
-      : await client.posts.getPosts.query(undefined);
+  watch(sessionPending(), async (pending) => {
+    if (!pending) {
+      try {
+        posts.value = currentUser.value
+          ? await client.posts.getPosts.query(undefined)
+          : await client.posts.getPublicPosts.query(undefined);
 
-    for (const post of posts.value) {
-      if (!users.value.has(post.ownerId)) {
-        const userInfo = await client.getUserInfo.query({ id: post.ownerId });
-        users.value.set(post.ownerId, userInfo);
+        for (const post of posts.value) {
+          if (!users.value.has(post.ownerId)) {
+            const userInfo = await client.getUserInfo.query({ id: post.ownerId });
+            users.value.set(post.ownerId, userInfo);
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching posts:', error);
+      } finally {
+        isLoading.value = false;
       }
     }
-  } catch (error) {
-    console.error('Error fetching posts:', error);
-  } finally {
-    isLoading.value = false;
-  }
+  }, { immediate: true });
 });
 
 const formatDate = (dateString: Date | string): string => {
   return new Date(dateString).toLocaleDateString();
 };
 
-const getUserName = (userId: string): string => {
-  return users.value.get(userId)?.name || 'Unknown User';
+// Function that returns a computed value for each user name
+const getUserName = (userId: string) => {
+  return computed(() => users.value.get(userId)?.name || 'Unknown User');
 };
 </script>
 
+<template>
+  <div>
+    <div class="welcome-banner">
+      <h1>Welcome to Simple Server</h1>
+      <p v-if="currentUser">Hello, {{ currentUser?.name || 'User' }}! View your posts below or create a new one.</p>
+      <p v-else>This is a simple blog platform. Sign in to see more posts and create your own.</p>
+
+      <div class="action-buttons">
+        <RouterLink v-if="!currentUser" to="/login">
+          <button class="btn btn-primary">Login</button>
+        </RouterLink>
+        <RouterLink v-if="!currentUser" to="/register">
+          <button class="btn btn-secondary">Register</button>
+        </RouterLink>
+        <RouterLink v-if="currentUser" to="/profile">
+          <button class="btn btn-primary">My Profile</button>
+        </RouterLink>
+      </div>
+    </div>
+
+    <div v-if="isLoading" class="loading">Loading posts...</div>
+
+    <div v-else class="posts">
+      <div v-for="post in posts" :key="post.id" class="post">
+        <h2>{{ post.title }}</h2>
+        <p>{{ post.body }}</p>
+        <small>By {{ getUserName(post.ownerId).value }} on {{ formatDate(post.createdAt) }}</small>
+      </div>
+
+      <div v-if="posts.length === 0" class="post">
+        <p>No posts available.</p>
+        <p v-if="!currentUser">Login to see more posts and create your own.</p>
+      </div>
+    </div>
+  </div>
+</template>
+
 <style scoped>
-#login-button {
-  inline-size: 100px;
-  margin: 10px 0;
+.welcome-banner {
+  background-color: #f0f0f0;
+  padding: 20px;
+  margin-bottom: 20px;
+  border-radius: 5px;
+  text-align: center;
+}
+
+.welcome-banner h1 {
+  margin-top: 0;
+  color: #333;
+}
+
+.action-buttons {
+  margin: 15px 0;
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.btn {
   padding: 10px 20px;
-  background-color: #333333;
-  color: white;
   border: none;
   border-radius: 5px;
   cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.btn-primary {
+  background-color: #333;
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #555;
+}
+
+.btn-secondary {
+  background-color: #e0e0e0;
+  color: #333;
+}
+
+.btn-secondary:hover {
+  background-color: #ccc;
 }
 
 .posts {
@@ -81,25 +163,3 @@ const getUserName = (userId: string): string => {
   color: #666;
 }
 </style>
-
-<template>
-  <div>
-    <RouterLink v-if="!loggedIn" to="/login">
-      <button type="button" id="login-button">Login</button>
-    </RouterLink>
-
-    <div v-if="isLoading" class="loading">Loading...</div>
-
-    <div v-else class="posts">
-      <div v-for="post in posts" :key="post.id" class="post">
-        <h2>{{ post.title }}</h2>
-        <p>{{ post.body }}</p>
-        <small>By {{ getUserName(post.ownerId) }} on {{ formatDate(post.createdAt) }}</small>
-      </div>
-
-      <div v-if="posts.length === 0">
-        No posts available.
-      </div>
-    </div>
-  </div>
-</template>
