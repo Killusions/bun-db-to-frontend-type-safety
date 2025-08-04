@@ -24,6 +24,8 @@ console.log(userLogMessage.value);
 </template>
 
 <style>
+@import "tailwindcss";
+
 html, body, #app, #app-shell {
   height: 100%;
   margin: 0;
