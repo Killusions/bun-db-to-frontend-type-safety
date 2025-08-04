@@ -3,6 +3,11 @@ import { reactive, ref, computed, onMounted } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useSession, signIn } from '../client/auth';
 import SocialLogin from '../components/SocialLogin.vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const router = useRouter();
 const route = useRoute();
@@ -60,149 +65,101 @@ const handleForgotPassword = () => {
 </script>
 
 <template>
-  <div class="login-container">
-    <form class="login-form" @submit.prevent="handleSubmit">
-      <h2>Login</h2>
+  <div class="flex-1 flex-grow overflow-auto flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+      <Card>
+        <CardHeader class="space-y-1">
+          <CardTitle class="text-2xl font-bold">Sign in to your account</CardTitle>
+          <CardDescription>
+            Enter your email and password to access your account
+          </CardDescription>
+        </CardHeader>
 
-      <div v-if="showVerificationMessage" class="verification-message">
-        Your email is not verified. Please check your inbox for the verification email before logging in.
-      </div>
+        <form @submit.prevent="handleSubmit">
+          <CardContent class="space-y-4">
+            <!-- Error Alert -->
+            <Alert v-if="error" variant="destructive">
+              <AlertDescription>{{ error }}</AlertDescription>
+            </Alert>
 
-      <div class="form-group">
-        <input
-          type="email"
-          v-model="form.email"
-          placeholder="Email"
-          required
-          :disabled="isLoading"
-        />
-      </div>
+            <!-- Verification Message -->
+            <Alert v-if="showVerificationMessage" variant="default">
+              <AlertDescription>
+                Your email is not verified. Please check your inbox for the verification email before logging in.
+              </AlertDescription>
+            </Alert>
 
-      <div class="form-group">
-        <input
-          type="password"
-          v-model="form.password"
-          placeholder="Password"
-          required
-          :disabled="isLoading"
-        />
-      </div>
+            <!-- Email Field -->
+            <div class="space-y-2">
+              <Label for="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                v-model="form.email"
+                :disabled="isLoading"
+                required
+              />
+            </div>
 
-      <button type="submit" :disabled="isLoading">
-        {{ isLoading ? 'Logging in...' : 'Login' }}
-      </button>
+            <!-- Password Field -->
+            <div class="space-y-2">
+              <Label for="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                v-model="form.password"
+                :disabled="isLoading"
+                required
+              />
+            </div>
 
-      <div v-if="error" class="error-message">
-        {{ error }}
-      </div>
+            <!-- Forgot Password Link -->
+            <div class="text-right">
+              <Button
+                variant="link"
+                class="px-0 text-sm"
+                @click="handleForgotPassword"
+                type="button"
+              >
+                Forgot your password?
+              </Button>
+            </div>
 
-      <div class="forgot-password-link">
-        <a @click="handleForgotPassword">Forgot your password?</a>
-      </div>
+            <!-- Login Button -->
+            <Button
+              type="submit"
+              class="w-full"
+              :disabled="isLoading"
+            >
+              {{ isLoading ? 'Signing in...' : 'Sign in' }}
+            </Button>
 
-      <!-- Social Login -->
-      <SocialLogin
-        :redirectTo="redirectTo"
-        :showDivider="true"
-        buttonStyle="full"
-        size="medium"
-      />
+            <!-- Social Login -->
+            <SocialLogin
+              :redirectTo="redirectTo"
+              :showDivider="true"
+              buttonStyle="full"
+              size="default"
+            />
+          </CardContent>
 
-      <div v-if="showRegisterLink" class="register-link">
-        Don't have an account? <a @click.prevent="router.push('/register')" href="/register">Register</a>
-      </div>
-    </form>
+          <CardFooter v-if="showRegisterLink">
+            <div class="text-center text-sm w-full">
+              Don't have an account?
+              <Button
+                variant="link"
+                class="px-1"
+                @click="router.push('/register')"
+                type="button"
+              >
+                Create an account
+              </Button>
+            </div>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   </div>
 </template>
-
-<style scoped>
-.login-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.login-form {
-  display: flex;
-  flex-direction: column;
-  width: 300px;
-  padding: 20px;
-  background-color: white;
-  border-radius: 5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-.verification-message {
-  background-color: #e3f2fd;
-  border: 1px solid #2196f3;
-  border-radius: 4px;
-  padding: 10px;
-  margin-bottom: 15px;
-  font-size: 14px;
-  color: #1976d2;
-}
-
-input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-button {
-  padding: 10px 15px;
-  background-color: #333;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-button:hover {
-  background-color: #555;
-}
-
-button:disabled {
-  background-color: #999;
-  cursor: not-allowed;
-}
-
-.error-message {
-  color: #e74c3c;
-  font-size: 14px;
-  margin-top: 10px;
-}
-
-.register-link,
-.forgot-password-link {
-  margin-top: 15px;
-  font-size: 14px;
-  text-align: center;
-}
-
-.register-link a,
-.forgot-password-link a {
-  color: #333;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-.register-link a:hover,
-.forgot-password-link a:hover {
-  color: #555;
-}
-
-.forgot-password-link {
-  margin-top: 10px;
-}
-</style>

@@ -3,6 +3,11 @@ import { reactive, ref, computed, onMounted } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSession, signUp } from '../client/auth';
 import SocialLogin from '../components/SocialLogin.vue';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const router = useRouter();
 const error = ref('');
@@ -70,153 +75,113 @@ const handleSubmit = async () => {
 </script>
 
 <template>
-  <div class="register-container">
-    <form class="register-form" @submit.prevent="handleSubmit">
-      <h2>Register</h2>
+  <div class="flex-1 flex-grow overflow-auto flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-md w-full space-y-8">
+      <Card>
+        <CardHeader class="space-y-1">
+          <CardTitle class="text-2xl font-bold">Create your account</CardTitle>
+          <CardDescription>
+            Enter your information to create a new account
+          </CardDescription>
+        </CardHeader>
 
-      <div class="form-group">
-        <input
-          type="text"
-          v-model="form.name"
-          placeholder="Name"
-          required
-          :disabled="isLoading"
-        />
-      </div>
+        <form @submit.prevent="handleSubmit">
+          <CardContent class="space-y-4">
+            <!-- Error Alert -->
+            <Alert v-if="error" variant="destructive">
+              <AlertDescription>{{ error }}</AlertDescription>
+            </Alert>
 
-      <div class="form-group">
-        <input
-          type="email"
-          v-model="form.email"
-          placeholder="Email"
-          required
-          :disabled="isLoading"
-        />
-      </div>
+            <!-- Success Alert -->
+            <Alert v-if="successMessage" variant="default">
+              <AlertDescription>{{ successMessage }}</AlertDescription>
+            </Alert>
 
-      <div class="form-group">
-        <input
-          type="password"
-          v-model="form.password"
-          placeholder="Password"
-          required
-          :disabled="isLoading"
-        />
-      </div>
+            <!-- Name Field -->
+            <div class="space-y-2">
+              <Label for="name">Full Name</Label>
+              <Input
+                id="name"
+                type="text"
+                placeholder="Enter your full name"
+                v-model="form.name"
+                :disabled="isLoading"
+                required
+              />
+            </div>
 
-      <div class="form-group">
-        <input
-          type="password"
-          v-model="form.confirmPassword"
-          placeholder="Confirm Password"
-          required
-          :disabled="isLoading"
-        />
-      </div>
+            <!-- Email Field -->
+            <div class="space-y-2">
+              <Label for="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                v-model="form.email"
+                :disabled="isLoading"
+                required
+              />
+            </div>
 
-      <button type="submit" :disabled="isLoading">
-        {{ isLoading ? 'Registering...' : 'Register' }}
-      </button>
+            <!-- Password Field -->
+            <div class="space-y-2">
+              <Label for="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                v-model="form.password"
+                :disabled="isLoading"
+                required
+              />
+            </div>
 
-      <div v-if="error" class="error-message">
-        {{ error }}
-      </div>
+            <!-- Confirm Password Field -->
+            <div class="space-y-2">
+              <Label for="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                v-model="form.confirmPassword"
+                :disabled="isLoading"
+                required
+              />
+            </div>
 
-      <div v-if="successMessage" class="success-message">
-        {{ successMessage }}
-      </div>
+            <!-- Register Button -->
+            <Button
+              type="submit"
+              class="w-full"
+              :disabled="isLoading"
+            >
+              {{ isLoading ? 'Creating account...' : 'Create account' }}
+            </Button>
 
-      <!-- Social Login -->
-      <SocialLogin
-        redirectTo="/"
-        :showDivider="true"
-        buttonStyle="full"
-        size="medium"
-      />
+            <!-- Social Login -->
+            <SocialLogin
+              redirectTo="/"
+              :showDivider="true"
+              buttonStyle="full"
+              size="default"
+            />
+          </CardContent>
 
-      <div class="login-link">
-        Already have an account? <a @click.prevent="router.push('/login')" href="/login">Login</a>
-      </div>
-    </form>
+          <CardFooter>
+            <div class="text-center text-sm w-full">
+              Already have an account?
+              <Button
+                variant="link"
+                class="px-1"
+                @click="router.push('/login')"
+                type="button"
+              >
+                Sign in
+              </Button>
+            </div>
+          </CardFooter>
+        </form>
+      </Card>
+    </div>
   </div>
 </template>
-
-<style scoped>
-.register-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  height: 100vh;
-  background-color: #f5f5f5;
-}
-
-.register-form {
-  display: flex;
-  flex-direction: column;
-  width: 300px;
-  padding: 20px;
-  background-color: white;
-  border-radius: 5px;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
-}
-
-.form-group {
-  margin-bottom: 15px;
-}
-
-input {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-button {
-  padding: 10px 15px;
-  background-color: #333;
-  color: white;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-button:hover {
-  background-color: #555;
-}
-
-button:disabled {
-  background-color: #999;
-  cursor: not-allowed;
-}
-
-.error-message {
-  color: #e74c3c;
-  font-size: 14px;
-  margin-top: 10px;
-}
-
-.success-message {
-  color: #2ecc71;
-  font-size: 14px;
-  margin-top: 10px;
-}
-
-.login-link {
-  margin-top: 15px;
-  font-size: 14px;
-  text-align: center;
-}
-
-.login-link a {
-  color: #333;
-  text-decoration: underline;
-}
-
-.login-link a:hover {
-  color: #555;
-}
-</style>
