@@ -1,11 +1,12 @@
 import { initTRPC, TRPCError } from '@trpc/server';
+import { type OpenApiMeta } from 'trpc-to-openapi';
 import superjson from 'superjson';
 
 import type { Context, RequiredContext } from './context';
 
-const t = initTRPC.context<Context>().create({ transformer: superjson });
+const t = initTRPC.context<Context>().meta<OpenApiMeta>().create({ transformer: superjson });
 // Only for type safety, not used at runtime
-const requiredContext = initTRPC.context<RequiredContext>();
+const requiredContext = initTRPC.context<RequiredContext>().meta<OpenApiMeta>();
 type RequiredContextType = ReturnType<typeof requiredContext.create>;
 
 // Middleware to verify the user is authenticated
