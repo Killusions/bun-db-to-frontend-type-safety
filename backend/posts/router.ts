@@ -16,10 +16,10 @@ const getPosts = async (conditions: (SQL | undefined)[] = []) => {
 };
 
 export const postsRouter = router({
-  getPublicPosts: publicProcedure.input(z.void().optional()).output(createSelectSchema(tables.posts).array()).query(async () => {
+  getPublicPosts: publicProcedure.input(z.void().optional()).output(createSelectSchema(tables.posts).array()).meta({ openapi: { method: 'GET', path: '/posts/public' } }).query(async () => {
     return await getPosts([eq(tables.posts.isPrivate, false)]);
   }),
-  getPosts: protectedProcedure.input(z.void().optional()).output(createSelectSchema(tables.posts).array()).query(async({ ctx: { session } }) => {
+  getPosts: protectedProcedure.input(z.void().optional()).output(createSelectSchema(tables.posts).array()).meta({ openapi: { method: 'GET', path: '/posts' } }).query(async({ ctx: { session } }) => {
     return await getPosts([
       or(eq(tables.posts.isPrivate, false), eq(tables.posts.ownerId, session.userId))
     ]);
@@ -27,12 +27,14 @@ export const postsRouter = router({
   getUserPosts: protectedProcedure
     .input(createSelectSchema(tables.posts).pick({ ownerId: true }))
     .output(createSelectSchema(tables.posts).array())
+    .meta({ openapi: { method: 'GET', path: '/posts/user' } })
     .query(async ({ input }) => {
       return await getPosts([and(eq(tables.posts.ownerId, input.ownerId), or(eq(tables.posts.isPrivate, false), eq(tables.posts.ownerId, input.ownerId)))]);
     }),
   createPost: protectedProcedure
     .input(createInsertSchema(tables.posts).omit({ id: true, ownerId: true, createdAt: true }))
     .output(createSelectSchema(tables.posts))
+    .meta({ openapi: { method: 'POST', path: '/posts' } })
     .mutation(async ({ input, ctx: { session } }) => {
       const post = await db.insert(tables.posts).values({ ...input, ownerId: session.userId }).returning();
       if (post.length === 0 || !post[0]) {
@@ -43,6 +45,7 @@ export const postsRouter = router({
   updatePost: protectedProcedure
     .input(createUpdateSchema(tables.posts).required({ id: true }).omit({ ownerId: true }))
     .output(createSelectSchema(tables.posts))
+    .meta({ openapi: { method: 'PUT', path: '/posts' } })
     .mutation(async ({ input, ctx: { session } }) => {
       const updatedPost = await db.update(tables.posts).set(input).where(and(eq(tables.posts.id, input.id), eq(tables.posts.ownerId, session.userId))).returning();
       if (updatedPost.length === 0 || !updatedPost[0]) {
@@ -53,6 +56,7 @@ export const postsRouter = router({
   deletePost: protectedProcedure
     .input(createSelectSchema(tables.posts).pick({ id: true }))
     .output(z.void())
+    .meta({ openapi: { method: 'DELETE', path: '/posts' } })
     .mutation(async ({ input, ctx: { session } }) => {
       const deletedPost = await db.delete(tables.posts).where(and(eq(tables.posts.id, input.id), eq(tables.posts.ownerId, session.userId))).returning();
       if (deletedPost.length === 0 || !deletedPost[0]) {
