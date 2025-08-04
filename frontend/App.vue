@@ -8,7 +8,7 @@ const session = useSession();
 
 // Computed values
 const currentUser = computed(() => session.value?.data?.user);
-const userLogMessage = computed(() => 
+const userLogMessage = computed(() =>
   currentUser.value ? `Current user: ${currentUser.value.name}` : 'No user logged in'
 );
 
@@ -17,17 +17,23 @@ console.log(userLogMessage.value);
 </script>
 
 <template>
-  <div id="app-shell" class="min-h-screen bg-background font-sans antialiased">
+  <div id="app-shell" class="flex flex-col min-h-screen bg-background font-sans antialiased">
     <NavBar />
     <RouterView />
   </div>
 </template>
 
 <style>
-@import "tailwindcss";
+/* Global styles */
+html {
+  font-feature-settings: "rlig" 1, "calt" 1;
+}
 
-html, body, #app, #app-shell {
-  height: 100%;
+* {
+  border-color: hsl(var(--border));
+}
+
+body {
   margin: 0;
   padding: 0;
   font-family:

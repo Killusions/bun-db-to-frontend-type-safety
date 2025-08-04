@@ -1,7 +1,11 @@
-# Bun DB to frontend type-safety (with Better Auth)
+# Bun DB to frontend type-safety (with Better Auth and shadcn/ui)
+
+**Move fast and break nothing!**
+
+**Batteries included, fast frontend development and one command setup and running (except for Postgres).**
 
 Example project combining bun's full-stack dev server with tRPC and drizzle, deriving frontend types from the DB schema.
-Features a complete authentication system powered by Better Auth with email verification, password reset, social login (SSO), and role-based access control, OpenAPI-compatible endpoints and a Vue frontend integrated as a bun plugin (works for bundler and dev server), including Tailwind CSS.
+Features a complete authentication system powered by Better Auth with email verification, password reset, social login (SSO), and role-based access control, OpenAPI-compatible endpoints and a Vue frontend integrated as a bun plugin (works for bundler and dev server), including Tailwind CSS and shadcn/ui components.
 
 To install dependencies:
 

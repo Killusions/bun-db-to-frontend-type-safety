@@ -1,2 +1,2 @@
-import vuePlugin from '@eckidevs/bun-plugin-vue';
+import vuePlugin from '@killusions/bun-plugin-vue';
 export default vuePlugin();

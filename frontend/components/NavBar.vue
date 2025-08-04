@@ -1,7 +1,24 @@
 <script lang="ts" setup>
+import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useSession, signOut, isAdmin } from '../client/auth';
-import { ref } from 'vue';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from '@/components/ui/sheet';
 
 const router = useRouter();
 const isMenuOpen = ref(false);
@@ -23,163 +40,172 @@ const handleLogout = async () => {
   }
 };
 
-const toggleMenu = () => {
-  isMenuOpen.value = !isMenuOpen.value;
-};
-
-const closeMenu = () => {
-  isMenuOpen.value = false;
+const getInitials = (name: string) => {
+  return name?.split(' ').map(n => n[0]).join('').toUpperCase() || 'U';
 };
 </script>
 
 <template>
-  <nav class="navbar">
-    <div class="navbar-container">
-      <div class="navbar-logo" @click="router.push('/')">
-        Simple Server
+  <nav class="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <div class="container flex h-16 items-center">
+      <!-- Logo -->
+      <div class="mr-6">
+        <Button
+          variant="ghost"
+          class="text-lg font-bold hover:bg-transparent p-0"
+          @click="router.push('/')"
+        >
+          Simple Server
+        </Button>
       </div>
 
-      <div class="navbar-menu-toggle" @click="toggleMenu">
-        <div class="bar"></div>
-        <div class="bar"></div>
-        <div class="bar"></div>
+      <!-- Desktop Navigation -->
+      <div class="hidden md:flex flex-1 items-center space-x-6">
+        <Button
+          variant="ghost"
+          class="text-sm font-medium"
+          @click="router.push('/')"
+        >
+          Home
+        </Button>
       </div>
 
-      <ul class="navbar-links" :class="{ 'active': isMenuOpen }">
-        <li @click="closeMenu">
-          <a @click.prevent="router.push('/')" href="/">Home</a>
-        </li>
+      <!-- Right side - User menu / Auth buttons -->
+      <div class="flex items-center space-x-4">
+        <!-- Desktop Auth -->
+        <div class="hidden md:flex items-center space-x-4">
+          <template v-if="session.data?.user">
+            <!-- Admin Badge -->
+            <Badge v-if="isAdminUser" variant="secondary" class="bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
+              Admin
+            </Badge>
 
-        <template v-if="session.data?.user">
-          <li @click="closeMenu">
-            <a @click.prevent="router.push('/profile')" href="/profile">Profile</a>
-          </li>
-          <li v-if="isAdminUser" @click="closeMenu">
-            <a @click.prevent="router.push('/admin')" href="/admin" class="admin-link">Admin</a>
-          </li>
-          <li @click="closeMenu">
-            <a href="#" @click.prevent="handleLogout">Logout</a>
-          </li>
-          <li class="user-greeting" @click="closeMenu">
-            Hello, {{ session.data?.user?.name || 'User' }}
-          </li>
-        </template>
+            <!-- User Dropdown -->
+            <DropdownMenu>
+              <DropdownMenuTrigger as-child>
+                <Button variant="ghost" class="relative h-8 w-8 rounded-full">
+                  <Avatar class="h-8 w-8">
+                    <AvatarFallback>{{ getInitials(session.data?.user?.name || 'User') }}</AvatarFallback>
+                  </Avatar>
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent class="w-56" align="end">
+                <div class="flex items-center justify-start gap-2 p-2">
+                  <div class="flex flex-col space-y-1 leading-none">
+                    <p class="font-medium">{{ session.data?.user?.name || 'User' }}</p>
+                    <p class="w-[200px] truncate text-sm text-muted-foreground">
+                      {{ session.data?.user?.email }}
+                    </p>
+                  </div>
+                </div>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem @click="router.push('/profile')">
+                  Profile
+                </DropdownMenuItem>
 
-        <template v-else>
-          <li @click="closeMenu">
-            <a @click.prevent="router.push('/login')" href="/login">Login</a>
-          </li>
-          <li @click="closeMenu">
-            <a @click.prevent="router.push('/register')" href="/register">Register</a>
-          </li>
-        </template>
-      </ul>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem @click="handleLogout">
+                  Logout
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </template>
+
+          <template v-else>
+            <Button variant="ghost" @click="router.push('/login')">
+              Login
+            </Button>
+            <Button @click="router.push('/register')">
+              Register
+            </Button>
+          </template>
+        </div>
+
+        <!-- Mobile Menu -->
+        <div class="md:hidden">
+          <Sheet v-model:open="isMenuOpen">
+            <SheetTrigger as-child>
+              <Button variant="ghost" size="icon">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="1.5"
+                  stroke="currentColor"
+                  class="h-6 w-6"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5"
+                  />
+                </svg>
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="right" class="w-[300px] sm:w-[400px]">
+              <SheetHeader>
+                <SheetTitle>Menu</SheetTitle>
+              </SheetHeader>
+
+              <div class="grid gap-4 py-4">
+                <!-- Mobile Navigation Links -->
+                <Button
+                  variant="ghost"
+                  class="justify-start"
+                  @click="router.push('/'); isMenuOpen = false"
+                >
+                  Home
+                </Button>
+
+                <template v-if="session.data?.user">
+                  <div class="flex items-center space-x-2 px-4 py-2">
+                    <Avatar class="h-8 w-8">
+                      <AvatarFallback>{{ getInitials(session.data?.user?.name || 'User') }}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p class="text-sm font-medium">{{ session.data?.user?.name || 'User' }}</p>
+                      <p class="text-xs text-muted-foreground">{{ session.data?.user?.email }}</p>
+                    </div>
+                    <Badge v-if="isAdminUser" variant="secondary" class="ml-auto">Admin</Badge>
+                  </div>
+
+                  <Button
+                    variant="ghost"
+                    class="justify-start"
+                    @click="router.push('/profile'); isMenuOpen = false"
+                  >
+                    Profile
+                  </Button>
+
+                  <Button
+                    variant="ghost"
+                    class="justify-start text-red-600"
+                    @click="handleLogout(); isMenuOpen = false"
+                  >
+                    Logout
+                  </Button>
+                </template>
+
+                <template v-else>
+                  <Button
+                    variant="ghost"
+                    class="justify-start"
+                    @click="router.push('/login'); isMenuOpen = false"
+                  >
+                    Login
+                  </Button>
+                  <Button
+                    class="justify-start"
+                    @click="router.push('/register'); isMenuOpen = false"
+                  >
+                    Register
+                  </Button>
+                </template>
+              </div>
+            </SheetContent>
+          </Sheet>
+        </div>
+      </div>
     </div>
   </nav>
 </template>
-
-<style scoped>
-.navbar {
-  background-color: #333;
-  color: white;
-  position: sticky;
-  top: 0;
-  z-index: 1000;
-}
-
-.navbar-container {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0 20px;
-  height: 60px;
-  max-width: 1200px;
-  margin: 0 auto;
-}
-
-.navbar-logo {
-  font-size: 20px;
-  font-weight: bold;
-  cursor: pointer;
-}
-
-.navbar-links {
-  display: flex;
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.navbar-links li {
-  margin-left: 20px;
-}
-
-.navbar-links a {
-  color: white;
-  text-decoration: none;
-  font-size: 16px;
-  transition: color 0.3s;
-  cursor: pointer;
-}
-
-.navbar-links a:hover {
-  color: #ccc;
-}
-
-.admin-link {
-  color: #ffd700 !important;
-}
-
-.user-greeting {
-  margin-left: 20px;
-  font-size: 14px;
-  opacity: 0.8;
-}
-
-.navbar-menu-toggle {
-  display: none;
-  flex-direction: column;
-  cursor: pointer;
-}
-
-.navbar-menu-toggle .bar {
-  width: 25px;
-  height: 3px;
-  background-color: white;
-  margin: 3px 0;
-  transition: 0.4s;
-}
-
-@media screen and (max-width: 768px) {
-  .navbar-menu-toggle {
-    display: flex;
-  }
-
-  .navbar-links {
-    position: absolute;
-    top: 60px;
-    left: 0;
-    right: 0;
-    flex-direction: column;
-    background-color: #333;
-    align-items: center;
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.5s ease;
-  }
-
-  .navbar-links.active {
-    max-height: 500px;
-    padding: 10px 0;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  }
-
-  .navbar-links li {
-    margin: 10px 0;
-  }
-
-  .user-greeting {
-    margin: 10px 0;
-  }
-}
-</style>
