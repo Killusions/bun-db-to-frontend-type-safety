@@ -35,3 +35,4 @@ serve({
 });
 
 console.log(`Server running at ${BACKEND_PROTOCOL}://${BACKEND_HOST}:${PORT} with hot reload for both frontend and backend.`);
+console.log(`Mobile app: Run 'bun run mobile:start' or 'bun run dev' for full-stack development`);

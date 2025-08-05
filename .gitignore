@@ -35,3 +35,32 @@ report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
 
 # Temporary files
 /tmp
+
+# Mobile build artifacts
+mobile/android/
+mobile/ios/
+mobile/builds/
+mobile/dist/
+mobile/.expo/
+
+# Metro bundler cache
+mobile/.metro-cache/
+mobile/node_modules/
+
+# Expo
+.expo/
+web-build/
+
+# Native
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Fastlane
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots
+fastlane/test_output

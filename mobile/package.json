@@ -1,0 +1,24 @@
+{
+  "name": "simple-server-mobile",
+  "private": true,
+  "scripts": {
+    "mobile:start": "bun expo start",
+    "mobile:android": "bun expo start --android",
+    "mobile:ios": "bun expo start --ios",
+    "mobile:web": "bun expo start --web --port 8081",
+    "mobile:build:android": "bun expo run:android --variant release",
+    "mobile:build:ios": "bun expo run:ios --configuration Release",
+    "mobile:prebuild": "bun run --bun tsc -p tsconfig.json && bun run dev/prebuild.ts",
+    "mobile:install": "bun expo install",
+    "mobile:build": "bun run --bun tsc -p tsconfig.json && bun run dev/build.ts",
+    "mobile:dev": "bun run dev/server.ts",
+    "android": "expo run:android",
+    "ios": "expo run:ios"
+  },
+  "version": "1.0.0",
+  "dependencies": {
+    "expo": "~53.0.20",
+    "react": "19.0.0",
+    "react-native": "0.79.5"
+  }
+}
