@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { customSession } from 'better-auth/plugins';
+import { expo } from '@better-auth/expo';
 import { eq } from 'drizzle-orm';
 import { db, tables } from '../db';
 import { user, session, account, verification } from '../db/auth-schema';
@@ -76,7 +77,12 @@ export const auth = betterAuth({
 
   trustedOrigins: [
     'http://localhost:3000',
+    'http://localhost:8081',
     process.env.BETTER_AUTH_URL || 'http://localhost:3000',
+    'simpleserver://',
+    'exp://localhost:8081',
+    'exp://127.0.0.1:8081',
+    'exp://*',
     ...(process.env.NODE_ENV === 'production' && process.env.PRODUCTION_URL ? [process.env.PRODUCTION_URL] : []),
   ],
 
@@ -109,6 +115,7 @@ export const auth = betterAuth({
         session
       };
     }),
+    expo(),
   ],
 });
 
